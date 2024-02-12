@@ -1,0 +1,15 @@
+version: "3.7"
+services:
+  ts-sidecar-base:
+    image: tailscale/tailscale:latest
+    # env vars to control the tailscale client
+    # see https://hub.docker.com/r/tailscale/tailscale
+    env_file: ./common.env
+    volumes:
+      # tailscale state for sidecar:
+      # {PWD} will refer to the location that docker compose is invoked
+      # so this is distinct when invoked from the different compose projects
+      - ${PWD}/data/ts-sidecar:/var/lib/tailscale
+      # This does not seem to be required on MacOS
+      # - /dev/net/tun:/dev/net/tun
+    restart: unless-stopped
