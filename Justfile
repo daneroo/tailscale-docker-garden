@@ -28,8 +28,8 @@ down-all:
 
 # Smoke Test: confirm we can bring up a tailscale host
 smoketest:
-  #!/usr/bin/env sh
-  set -ueo pipefail # -x makes bash print each script line before it’s run.
+  #!/usr/bin/env bash
+  set -eu # exit if fail or undefined variable
   echo "# Smoke test for tailscale container" | {{ gum_fmt_cmd }}
   just check_common_env
 
@@ -51,8 +51,8 @@ smoketest:
 
 # Bring up a nats server with a tailscale sidecar
 nats-server:
-  #!/usr/bin/env sh
-  set -ueo pipefail # -x makes bash print each script line before it’s run.
+  #!/usr/bin/env bash
+  set -eu # exit if fail or undefined variable
   echo "# Nats Server with Privileged Tailscale Sidecar" | {{ gum_fmt_cmd }}
   just check_common_env
 
@@ -74,8 +74,8 @@ nats-server-down:
 
 # Bring up a nats client with a tailscale sidecar
 nats-client:
-  #!/usr/bin/env sh
-  set -ueo pipefail # -x makes bash print each script line before it’s run.
+  #!/usr/bin/env bash
+  set -eu # exit if fail or undefined variable
   echo "# Nats Client with Privileged Tailscale Sidecar" | {{ gum_fmt_cmd }}
   just check_common_env
 
