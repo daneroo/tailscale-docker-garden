@@ -1,1 +1,2 @@
+# Ignore all the data directories, where we put the container mounted volumes
 data/
