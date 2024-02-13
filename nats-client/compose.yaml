@@ -1,0 +1,53 @@
+---
+version: "3.7"
+services:
+  ts-sidecar:
+    extends: { file: ../common/compose.yaml, service: ts-sidecar-base }
+    # we want hostname to be unique for all tailscale sidecars
+    # - in our multiple compose files (each havin a sidecar)
+    # - but also from different docker hosts (hence HOSTALIS suffix)
+    # HOSTALIAS does get set properly when defined in the common/compose.yaml -> ../common/common.env
+    # but it does work when defined ENV Variables (and in our Justfile)
+    # format: ts-sidecar-<subproject>-<HOSTALIAS>
+    hostname: ts-sidecar-nats-client-${HOSTALIAS:-local}
+
+  nats-publisher:
+    image: alpine:latest
+    restart: unless-stopped
+    network_mode: service:ts-sidecar
+    environment:
+      # expecting the justfile to set this
+      - NATS_SERVER_IP=${NATS_SERVER_IP}
+    # deploy:
+    #   mode: replicated
+    #   replicas: 2
+    command: >
+      /bin/sh -c '
+      if [ -z "${NATS_SERVER_IP}" ]; then
+        echo "NATS_SERVER_IP is not set, exiting";
+        exit 1;
+      fi;
+      apk add --no-cache curl util-linux &&
+      curl -sfL https://binaries.nats.dev/nats-io/natscli/nats@latest | sh &&
+      uuidgen > ./uniqueuuid &&
+      while true; do
+        ./nats pub ts.broadcast "Hello from NATS cli with UUID $(cat ./uniqueuuid)" --server=nats://${NATS_SERVER_IP}:4222;
+        sleep 1;
+      done'
+
+  # nats-subscriber:
+  #   image: alpine:latest
+  #   restart: unless-stopped
+  #   network_mode: service:ts-sidecar
+  #   environment:
+  #     # expecting the justfile to set this
+  #     - NATS_SERVER_IP=${NATS_SERVER_IP}
+  #   command: >
+  #     /bin/sh -c '
+  #     if [ -z "${NATS_SERVER_IP}" ]; then
+  #       echo "NATS_SERVER_IP is not set, exiting";
+  #       exit 1;
+  #     fi;
+  #     apk add --no-cache curl util-linux &&
+  #     curl -sfL https://binaries.nats.dev/nats-io/natscli/nats@latest | sh &&
+  #     ./nats sub -r ts.broadcast --server=nats://${NATS_SERVER_IP}:4222'

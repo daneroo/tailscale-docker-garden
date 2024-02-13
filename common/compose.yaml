@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  ts-sidecar-base:
+  ts-sidecar-base-unprivileged:
     image: tailscale/tailscale:latest
     # env vars to control the tailscale client
     # see https://hub.docker.com/r/tailscale/tailscale
@@ -11,5 +11,11 @@ services:
       # so this is distinct when invoked from the different compose projects
       - ${PWD}/data/ts-sidecar:/var/lib/tailscale
       # This does not seem to be required on MacOS
-      # - /dev/net/tun:/dev/net/tun
+      - /dev/net/tun:/dev/net/tun
     restart: unless-stopped
+
+  ts-sidecar-base:
+    extends: ts-sidecar-base-unprivileged
+    cap_add:
+      - net_admin
+      - sys_module

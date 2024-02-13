@@ -20,19 +20,25 @@ gum_fmt_cmd := "gum format --theme=light"
 default:
   just -l
 
-# Sanity check; confirm we can bring up a tailscale host
-sanity:
+# stop all services
+down-all: 
+  just nats-client-down
+  just nats-server-down 
+
+
+# Smoke Test: confirm we can bring up a tailscale host
+smoketest:
   #!/usr/bin/env sh
   set -ueo pipefail # -x makes bash print each script line before it’s run.
   echo "# Smoke test for tailscale container" | {{ gum_fmt_cmd }}
   just check_common_env
 
-  echo "## Spinning up tailscale container" | {{ gum_fmt_cmd }}
-  cd sanity
+  echo "## Spinning up containers" | {{ gum_fmt_cmd }}
+  cd smoketest
   gum spin --title "Spinning up containers" -- docker compose up -d
-  gum spin --title "Waiting for ts-sidecar" -- just waitForServiceRunning sanity ts-sidecar
+  gum spin --title "Waiting for ts-sidecar" -- just waitForServiceRunning smoketest ts-sidecar
   echo "{{ green_check }} - ts-sidecar is running"
-  gum spin --title "Waiting for tailscale ip" -- just waitForTailscaleIP sanity ts-sidecar
+  gum spin --title "Waiting for tailscale ip" -- just waitForTailscaleIP smoketest ts-sidecar
   ipv4=$(docker compose exec -T ts-sidecar tailscale ip -4)
   echo "{{ green_check }} - ts-sidecar got ip: ${ipv4}"
  
@@ -43,13 +49,73 @@ sanity:
   docker compose down
   echo "# All done" | {{ gum_fmt_cmd }}
 
-# Write a target that will cd into 01-authkey and run docker compose up -d
-# This will start the container in the background
-web:
-  cd 01-authkey && docker-compose up -d
+# Bring up a nats server with a tailscale sidecar
+nats-server:
+  #!/usr/bin/env sh
+  set -ueo pipefail # -x makes bash print each script line before it’s run.
+  echo "# Nats Server with Privileged Tailscale Sidecar" | {{ gum_fmt_cmd }}
+  just check_common_env
 
-weblog:
-  cd 01-authkey && docker-compose logs -f
+  echo "## Spinning up containers" | {{ gum_fmt_cmd }}
+  cd nats-server
+  gum spin --title "Spinning up containers" -- docker compose up -d
+  gum spin --title "Waiting for ts-sidecar" -- just waitForServiceRunning nats-server ts-sidecar
+  echo "{{ green_check }} - ts-sidecar is running"
+  gum spin --title "Waiting for tailscale ip" -- just waitForTailscaleIP nats-server ts-sidecar
+  ipv4=$(docker compose exec -T ts-sidecar tailscale ip -4)
+  echo "{{ green_check }} - ts-sidecar got ip: ${ipv4}"
+
+# Shut down the nats server
+nats-server-down:
+  #!/usr/bin/env bash
+  echo "## Spinning down containers" | {{ gum_fmt_cmd }}
+  cd nats-server
+  docker compose down
+
+# Bring up a nats client with a tailscale sidecar
+nats-client:
+  #!/usr/bin/env sh
+  set -ueo pipefail # -x makes bash print each script line before it’s run.
+  echo "# Nats Client with Privileged Tailscale Sidecar" | {{ gum_fmt_cmd }}
+  just check_common_env
+
+  echo "## Spinning up containers" | {{ gum_fmt_cmd }}
+  cd nats-client
+  export NATS_SERVER_IP=NOTYETDEFINED
+  gum spin --title "Spinning up only tailscale sidecar container" -- docker compose up -d ts-sidecar
+  gum spin --title "Waiting for ts-sidecar" -- just waitForServiceRunning nats-client ts-sidecar
+  echo "{{ green_check }} - ts-sidecar is running"
+  gum spin --title "Waiting for tailscale ip" -- just waitForTailscaleIP nats-client ts-sidecar
+  ipv4=$(docker compose exec -T ts-sidecar tailscale ip -4)
+  echo "{{ green_check }} - ts-sidecar got ip: ${ipv4}"
+  # now get the nats servers ip, from tailscale status
+  # we are looking for a server with a hostname that matches the nats-server pattern: ts-sidecar-nats-server-.*
+  # because it might be running on another host
+  nats_server_ip=$(docker compose exec -T ts-sidecar tailscale status --json | jq -r '.Peer | .[] | select(.HostName | test("ts-sidecar-nats-server-.*")) | .TailscaleIPs[0]')
+  if [ -z "${nats_server_ip}" ]; then
+    echo "{{ red_xmark }} - nats server ip not found: no server with hostname matching ts-sidecar-nats-server-.*"
+    echo "  You shoud run **just nats-server** first to bring up the nats server." | {{ gum_fmt_cmd }}
+    exit 1
+  fi
+  echo "{{ green_check }} - nats server ip: ${nats_server_ip}"
+  export NATS_SERVER_IP=${nats_server_ip}
+  gum spin --title "Spinning up ALL containers" -- docker compose up -d
+
+# Show the client subscriber output
+nats-client-show:
+  #!/usr/bin/env bash
+  echo "## Showing nats client subscriber output" | {{ gum_fmt_cmd }}
+  cd nats-client
+  docker compose logs -f nats-subscriber
+
+# Shut down the nats client
+nats-client-down:
+  #!/usr/bin/env bash
+  echo "## Spinning down containers" | {{ gum_fmt_cmd }}
+  cd nats-client
+  export NATS_SERVER_IP=NOTYETDEFINED
+  docker compose down
+
 
 # Check if common/common.env file exists and has an auth key
 [private]

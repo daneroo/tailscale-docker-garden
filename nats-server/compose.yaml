@@ -1,0 +1,20 @@
+---
+version: "3.7"
+services:
+  ts-sidecar:
+    extends: { file: ../common/compose.yaml, service: ts-sidecar-base }
+    # we want hostname to be unique for all tailscale sidecars
+    # - in our multiple compose files (each havin a sidecar)
+    # - but also from different docker hosts (hence HOSTALIS suffix)
+    # HOSTALIAS does get set properly when defined in the common/compose.yaml -> ../common/common.env
+    # but it does work when defined ENV Variables (and in our Justfile)
+    # format: ts-sidecar-<subproject>-<HOSTALIAS>
+    hostname: ts-sidecar-nats-server-${HOSTALIAS:-local}
+  nats:
+    # alpine to get a shell
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    network_mode: service:ts-sidecar
+    # volumes:
+    #   - ./config/nats/nats-server.conf:/nats/conf/nats-server.conf
+    #   - ./data/nats/jetstream:/data/jetstream

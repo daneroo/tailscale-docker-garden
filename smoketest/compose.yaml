@@ -8,4 +8,4 @@ services:
     # HOSTALIAS does get set properly when defined in the common/compose.yaml -> ../common/common.env
     # but it does work when defined ENV Variables (and in our Justfile)
     # format: ts-sidecar-<subproject>-<HOSTALIAS>
-    hostname: ts-sidecar-sanity-${HOSTALIAS:-local}
+    hostname: ts-sidecar-smoketest-${HOSTALIAS:-local}
