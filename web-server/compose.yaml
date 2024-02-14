@@ -1,0 +1,21 @@
+---
+version: "3.7"
+services:
+  ts-sidecar:
+    extends: { file: ../common/compose.yaml, service: ts-sidecar-base }
+    # we want hostname to be unique for all tailscale sidecars
+    # - in our multiple compose files (each havin a sidecar)
+    # - but also from different docker hosts (hence HOSTALIS suffix)
+    # HOSTALIAS does get set properly when defined in the common/compose.yaml -> ../common/common.env
+    # but it does work when defined ENV Variables (and in our Justfile)
+    # format: ts-sidecar-<subproject>-<HOSTALIAS>
+    hostname: ts-sidecar-web-server-${HOSTALIAS:-local}
+
+  web:
+    # unfortunately this is a scratch image - so no  - I could just extend whoami over alpine!
+    # image: traefik/whoami:latest
+    # other option which gets me an alpine shell
+    image: stefanprodan/podinfo
+    command: ./podinfo --port 80
+    restart: unless-stopped
+    network_mode: service:ts-sidecar

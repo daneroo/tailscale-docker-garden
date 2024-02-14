@@ -49,6 +49,29 @@ smoketest:
   docker compose down
   echo "# All done" | {{ gum_fmt_cmd }}
 
+# Bring up a web server with a tailscale sidecar
+web-server:
+  #!/usr/bin/env bash
+  set -eu # exit if fail or undefined variable
+  echo "# Web Server with Privileged Tailscale Sidecar" | {{ gum_fmt_cmd }}
+  just check_common_env
+
+  echo "## Spinning up containers" | {{ gum_fmt_cmd }}
+  cd web-server
+  gum spin --title "Spinning up containers" -- docker compose up -d
+  gum spin --title "Waiting for ts-sidecar" -- just waitForServiceRunning web-server ts-sidecar
+  echo "{{ green_check }} - ts-sidecar is running"
+  gum spin --title "Waiting for tailscale ip" -- just waitForTailscaleIP web-server ts-sidecar
+  ipv4=$(docker compose exec -T ts-sidecar tailscale ip -4)
+  echo "{{ green_check }} - ts-sidecar got ip: ${ipv4}"
+
+# Shut down the web server
+web-server-down:
+  #!/usr/bin/env bash
+  echo "## Spinning down containers" | {{ gum_fmt_cmd }}
+  cd web-server
+  docker compose down
+  
 # Bring up a nats server with a tailscale sidecar
 nats-server:
   #!/usr/bin/env bash

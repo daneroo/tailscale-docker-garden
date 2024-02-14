@@ -6,6 +6,11 @@ Forked from [tailscale-dev/docker-guide-code-examples](https://github.com/tailsc
 
 The goal of the experiment is to determine if and when it is possible tu run the tailscale sidecar container without the `net_admin` and `sys_module` privileged capabilities.
 
+Also there is a difference between the requirements of the tailscale container ast to the direction of the traffic.
+
+- outgoing: e.g. a nats client subscribes or publishes as an outgoing connection to the nats server
+- incoming: e.g. a web server or proxy, or the nats server itself, must serve incoming traffic.
+
 A secondary objective was to determine how to refactor/reuse docker `compose.yaml` files with `extends` and `env_file` to avoid duplication.
 
 ## Testing
