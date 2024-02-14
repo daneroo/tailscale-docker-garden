@@ -35,7 +35,7 @@ services:
       apk add --no-cache curl util-linux;
       curl -sfL https://binaries.nats.dev/nats-io/natscli/nats@latest | sh;
       uuidgen > ./uniqueuuid;
-      printf "%06d" 0 > ./counter;
+      printf "%06d" 1000000 > ./counter;
       while true; do
         ./nats pub ts.broadcast "$(date -u '+%Y-%m-%dT%H:%M:%SZ') - $(cat ./counter) -UUID $(cat ./uniqueuuid)";
         sleep 1;
