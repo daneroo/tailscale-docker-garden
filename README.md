@@ -6,34 +6,33 @@ Forked from [tailscale-dev/docker-guide-code-examples](https://github.com/tailsc
 
 The goal of the experiment is to determine if and when it is possible tu run the tailscale sidecar container without the `net_admin` and `sys_module` privileged capabilities.
 
-Also there is a difference between the requirements of the tailscale container ast to the direction of the traffic.
+Also there is a difference between the requirements of the tailscale container as to the direction of the traffic.
 
-- outgoing: e.g. a nats client subscribes or publishes as an outgoing connection to the nats server
+- outgoing: e.g. a nats client subscribes or publishes as an outgoing connection to the nats server. This is specifically regarding trafic that originates from the container, to another node on our tailnet
 - incoming: e.g. a web server or proxy, or the nats server itself, must serve incoming traffic.
 
 A secondary objective was to determine how to refactor/reuse docker `compose.yaml` files with `extends` and `env_file` to avoid duplication.
 
-## Testing
-
-- 01-authkey: no tailscale on docker host (galois),
-  - [x] gateway to tailscale container
-    - [x] curl http://100.101.221.125:58890/
-    - [x] curl http://100.101.221.125:80
-- nats-server: no tailscale on docker host (galois),
-  - [x] gateway to tailscale container
-    - [x] nats bench my-test-subject --pub 1 --sub 1 --msgs 100 --size 128 -s nats://100.126.232.66:4222
-
-## TODO
-
-- [ ] Nats server (privileged)
-- [ ] Nats client (unprivileged)
-  - publisher
-  - subscriber
-- [ ] Simple web server (privileged)
-
 ## Usage
 
 pre-requisites: docker, just (make replacement), gum, tailscale account
+
+```sh
+just smoketest
+
+just web-server
+just web-server-down
+
+just nats-server
+
+just nats-client
+just nats-client-show
+just nats-client-down
+
+just nats-server-down
+
+just down-all
+```
 
 ## Authentication to tailscale
 

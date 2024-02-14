@@ -2,7 +2,9 @@
 version: "3.7"
 services:
   ts-sidecar:
-    extends: { file: ../common/compose.yaml, service: ts-sidecar-base }
+    # we are now using the unprivileged version of the sidecar
+    extends:
+      { file: ../common/compose.yaml, service: ts-sidecar-base-unprivileged }
     # we want hostname to be unique for all tailscale sidecars
     # - in our multiple compose files (each havin a sidecar)
     # - but also from different docker hosts (hence HOSTALIS suffix)
