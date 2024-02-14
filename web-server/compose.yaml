@@ -13,9 +13,9 @@ services:
 
   web:
     # unfortunately this is a scratch image - so no  - I could just extend whoami over alpine!
-    # image: traefik/whoami:latest
+    image: traefik/whoami:latest
     # other option which gets me an alpine shell
-    image: stefanprodan/podinfo
-    command: ./podinfo --port 80
+    # image: stefanprodan/podinfo
+    # command: ./podinfo --port 80
     restart: unless-stopped
     network_mode: service:ts-sidecar
