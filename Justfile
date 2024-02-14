@@ -130,7 +130,8 @@ nats-client-show:
   #!/usr/bin/env bash
   echo "## Showing nats client subscriber output" | {{ gum_fmt_cmd }}
   cd nats-client
-  docker compose logs -f nats-subscriber
+  docker compose logs -f
+  # docker compose logs -f nats-subscriber
 
 # Shut down the nats client
 nats-client-down:

@@ -10,14 +10,19 @@ services:
     # but it does work when defined ENV Variables (and in our Justfile)
     # format: ts-sidecar-<subproject>-<HOSTALIAS>
     hostname: ts-sidecar-nats-client-${HOSTALIAS:-local}
+    environment:
+      - TS_SOCKS5_SERVER=:1055 # Set SOCKS5 proxy to listen on port 1055
+      - TS_TAILSCALED_EXTRA_ARGS=--tun=userspace-networking # Use userspace networking
 
   nats-publisher:
     image: alpine:latest
     restart: unless-stopped
     network_mode: service:ts-sidecar
     environment:
-      # expecting the justfile to set this
+      # expecting the justfile to set NATS_SERVER_IP
       - NATS_SERVER_IP=${NATS_SERVER_IP}
+      - NATS_URL=nats://${NATS_SERVER_IP}:4222
+      - NATS_SOCKS_PROXY=socks5://localhost:1055
     # deploy:
     #   mode: replicated
     #   replicas: 2
@@ -27,27 +32,31 @@ services:
         echo "NATS_SERVER_IP is not set, exiting";
         exit 1;
       fi;
-      apk add --no-cache curl util-linux &&
-      curl -sfL https://binaries.nats.dev/nats-io/natscli/nats@latest | sh &&
-      uuidgen > ./uniqueuuid &&
+      apk add --no-cache curl util-linux;
+      curl -sfL https://binaries.nats.dev/nats-io/natscli/nats@latest | sh;
+      uuidgen > ./uniqueuuid;
+      printf "%06d" 0 > ./counter;
       while true; do
-        ./nats pub ts.broadcast "Hello from NATS cli with UUID $(cat ./uniqueuuid)" --server=nats://${NATS_SERVER_IP}:4222;
+        ./nats pub ts.broadcast "$(date -u '+%Y-%m-%dT%H:%M:%SZ') - $(cat ./counter) -UUID $(cat ./uniqueuuid)";
         sleep 1;
+        printf "%06d" $(($(cat ./counter) + 1)) > ./counter;
       done'
 
-  # nats-subscriber:
-  #   image: alpine:latest
-  #   restart: unless-stopped
-  #   network_mode: service:ts-sidecar
-  #   environment:
-  #     # expecting the justfile to set this
-  #     - NATS_SERVER_IP=${NATS_SERVER_IP}
-  #   command: >
-  #     /bin/sh -c '
-  #     if [ -z "${NATS_SERVER_IP}" ]; then
-  #       echo "NATS_SERVER_IP is not set, exiting";
-  #       exit 1;
-  #     fi;
-  #     apk add --no-cache curl util-linux &&
-  #     curl -sfL https://binaries.nats.dev/nats-io/natscli/nats@latest | sh &&
-  #     ./nats sub -r ts.broadcast --server=nats://${NATS_SERVER_IP}:4222'
+  nats-subscriber:
+    image: alpine:latest
+    restart: unless-stopped
+    network_mode: service:ts-sidecar
+    environment:
+      # expecting the justfile to set NATS_SERVER_IP
+      - NATS_SERVER_IP=${NATS_SERVER_IP}
+      - NATS_URL=nats://${NATS_SERVER_IP}:4222
+      - NATS_SOCKS_PROXY=socks5://localhost:1055
+    command: >
+      /bin/sh -c '
+      if [ -z "${NATS_SERVER_IP}" ]; then
+        echo "NATS_SERVER_IP is not set, exiting";
+        exit 1;
+      fi;
+      apk add --no-cache curl util-linux &&
+      curl -sfL https://binaries.nats.dev/nats-io/natscli/nats@latest | sh &&
+      ./nats sub -r ts.broadcast'
