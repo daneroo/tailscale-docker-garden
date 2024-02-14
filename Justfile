@@ -23,7 +23,8 @@ default:
 # stop all services
 down-all: 
   just nats-client-down
-  just nats-server-down 
+  just nats-server-down
+  just web-server-down
 
 
 # Smoke Test: confirm we can bring up a tailscale host
@@ -71,7 +72,7 @@ web-server-down:
   echo "## Spinning down containers" | {{ gum_fmt_cmd }}
   cd web-server
   docker compose down
-  
+
 # Bring up a nats server with a tailscale sidecar
 nats-server:
   #!/usr/bin/env bash
