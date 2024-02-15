@@ -16,6 +16,7 @@ A secondary objective was to determine how to refactor/reuse docker `compose.yam
 ## TODO
 
 - [ ] Good a place as any to get nix+direnv to work!
+  - [ ] See <https://github.com/xtruder/nix-devcontainer> (may be dated)
 - [ ] Minimum requirements:
   - [ ] `- /dev/net/tun:/dev/net/tun` mapping is NOT required as it does not even exist on MacOS
 
