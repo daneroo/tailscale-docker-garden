@@ -50,8 +50,8 @@ Although it would be more complete to use **OAuth Secrets** to provide scopes an
 Go to: <https://login.tailscale.com/admin/settings/keys> to generate your auth key.
 
 - It will expire in at most 90 days.
-- Make it reusable, so we can use it for all our exerimet's tailscale containers.
-- Make it ephemaeral, so it the devices will be automatically removed after going offline
+- Make it reusable, so we can use it for all our experiment's tailscale containers.
+- Make it ephemeral, so it the devices will be automatically removed after going offline
 - Copy [`./common/common.example.dev`](./common/common.example.env) to [`./common/common.env`](./common/common.env) and fill in the `TS_AUTHKEY` with your key. (`common/common.env` is gitignored)
 
 ## Compose File Inheritance
