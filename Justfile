@@ -160,6 +160,29 @@ check_common_env:
     echo "{{ green_check }} - common/common.env file contains TS_AUTHKEY"
   fi
 
+# Run the embedded NATS smoke test with external client
+embedded-nats:
+    #!/usr/bin/env bash
+    echo "## Starting NATS embedded server" | {{ gum_fmt_cmd }}
+    # Kill any existing NATS server
+    lsof -ti :4222 | xargs kill 2>/dev/null || true
+    sleep 1
+    cd embedded && go run cmd/nats-embed/nats-embed.go 2>&1 & 
+    server_pid=$!
+    echo "Server started with PID: $server_pid"
+    echo "Waiting 2 seconds for server to initialize..."
+    sleep 2
+    echo "## Sending test message to NATS server" | {{ gum_fmt_cmd }}
+    nats req hello "Hello NATS (from external)!"
+    # Wait to see the server's response, then shutdown
+    sleep 2
+    echo "## Shutting down NATS embedded server" | {{ gum_fmt_cmd }}
+    kill $server_pid 2>/dev/null || true
+
+# Run the embedded Tailscale Web Server smoke test with external client
+embedded-web:
+    #!/usr/bin/env bash
+    cd embedded && go run cmd/tailscale-web-server/tailscale-web-server.go
 
 # Wait for compose service to be running (compose file in the specified directory)
 [private]
@@ -185,3 +208,4 @@ waitForTailscaleIP directory service:
     echo "{{ red_xmark }} - Tailscale ip not yet assigned"
     sleep 1
   done
+
