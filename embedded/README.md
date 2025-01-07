@@ -3,6 +3,8 @@
 We are trying to combine both NATS and tailscale into a service.
 This would create a reusable component that only requires user-space privileges.
 
+WIP: *This was not yet successful*
+
 While both NATS and tailscale are individually embeddable, we have not yet been able to integrate them both.
 
 Still investigating possible approaches to combine both in user-space without requiring OS privileges.

@@ -1,0 +1,85 @@
+# Install just on Ubuntu:
+# curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin/
+# Install just on macOS:
+# brew install just
+
+# This will expose the docker host's name as HOSTALIAS
+export HOSTALIAS := `hostname -s`
+
+# Colors and symbols
+# weird escape for Just, could not get octal 33 any other way
+green := `printf "\033[32m"`
+red := `printf "\033[31m"`
+reset := `printf "\033[0m"`
+green_check := green + "✔" + reset
+red_xmark := red + "✗" + reset
+# centralize the format command to style (theme=light)
+gum_fmt_cmd := "gum format --theme=light"
+
+# List available commands
+default:
+  just -l
+
+
+
+# Run the embedded NATS smoke test with external client
+embedded-nats:
+    #!/usr/bin/env bash
+    echo "## Starting NATS embedded server" | {{ gum_fmt_cmd }}
+    # Kill any existing NATS server
+    lsof -ti :4222 | xargs kill 2>/dev/null || true
+    sleep 1
+    go run cmd/nats-embed/nats-embed.go 2>&1 & 
+    server_pid=$!
+    echo "{{ green_check }} - NATS Server started with PID: $server_pid"
+    echo "Waiting 2 seconds for server to initialize..."
+    sleep 2
+    echo "## Sending test message to NATS server" | {{ gum_fmt_cmd }}
+    echo "expect mixed server and client output"
+    echo ""
+    nats req hello "Hello NATS (from external)!"
+    # Wait to see the server's response, then shutdown
+    sleep 2
+    echo "## Shutting down NATS embedded server" | {{ gum_fmt_cmd }}
+    kill $server_pid 2>/dev/null || true
+
+# Run the embedded Tailscale Web Server smoke test with external client
+embedded-web:
+    #!/usr/bin/env bash
+    echo "## Starting Tailscale embedded web server" | {{ gum_fmt_cmd }}
+    # Kill any existing server using the same port
+    lsof -ti :80 | xargs kill 2>/dev/null || true
+    sleep 1
+    # Source the environment variables from common.env
+    export $(cat ../common/common.env | grep '^TS_AUTHKEY=')
+    rm -f tailscale-ip.tmp
+    # Run server in background
+    go run cmd/tailscale-web-server/tailscale-web-server.go &
+    server_pid=$!
+
+    # Wait for IP file (up to 30 seconds)
+    timeout=30
+    while ((timeout > 0)); do
+        if [ -f tailscale-ip.tmp ]; then
+            server_ip=$(cat tailscale-ip.tmp)
+            echo "{{ green_check }} Captured Tailscale IP: $server_ip"
+            echo
+            echo "Ping test:"
+            ping -c 2 $server_ip
+            echo
+            echo "Curl test:"
+            curl -s http://$server_ip:80 | jq
+            echo
+            echo "## Shutting down Tailscale Web Server" | {{ gum_fmt_cmd }}
+            kill $server_pid
+            exit 0
+        fi
+        sleep 1
+        ((timeout--))
+    done
+
+    # If we get here, we timed out
+    echo "{{ red_xmark }} Timed out waiting for Tailscale IP"
+    kill $server_pid 2>/dev/null || true
+    exit 1
+

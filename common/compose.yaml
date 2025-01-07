@@ -1,4 +1,3 @@
-version: "3.7"
 services:
   ts-sidecar-base-unprivileged:
     image: tailscale/tailscale:latest

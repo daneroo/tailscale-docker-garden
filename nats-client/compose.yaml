@@ -1,5 +1,3 @@
----
-version: "3.7"
 services:
   ts-sidecar:
     # we are now using the unprivileged version of the sidecar

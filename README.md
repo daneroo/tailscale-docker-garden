@@ -1,5 +1,7 @@
 # Tailscale and Docker examples
 
+Note: *the incomplete (WIP) embedded tailscale and nats examples are in the [`embedded/`](./embedded/README.md) directory*
+
 This demonstrates how to use Tailscale with Docker using a sidecar pattern.
 
 Forked from [tailscale-dev/docker-guide-code-examples](https://github.com/tailscale-dev/docker-guide-code-examples)
